@@ -2,7 +2,7 @@ import express from "express";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import { randomBytes, createHash } from "crypto";
-import { SignJWT, exportJWK, importPKCS8 } from "jose";
+import { SignJWT, exportJWK, importPKCS8, importSPKI } from "jose";
 import fs from "fs";
 
 
@@ -21,6 +21,7 @@ clients.set("demo-client", {
 });
 
 const PRIVATE_KEY_PEM = fs.readFileSync("./private.pem", "utf8");
+const PUBLIC_KEY_PEM = fs.readFileSync("./public.pem", "utf8");
 
 
 const ISSUER = "http://localhost:3000";
@@ -47,7 +48,7 @@ function getDemoUser() {
   };
 }
 
-app.use("/authorize", (req, res) => {
+app.get("/authorize", (req, res) => {
     const { 
         response_type, 
         client_id, 
@@ -104,7 +105,9 @@ app.use("/authorize", (req, res) => {
  */
 // 
 app.post("/token", async (req, res) => {
+
     const { grant_type } = req.body;
+
     if (grant_type === "authorization_code") {
         const { code, redirect_uri, client_id, code_verifier } = req.body;
 
@@ -117,13 +120,88 @@ app.post("/token", async (req, res) => {
         }
         if (record.clientId !== client_id || record.redirectUri !== redirect_uri) return res.status(400).json ( { error: "invalid_request", error_description: "Invalid client_id or redirect_uri" });
 
-        const expectedCodeChallenge = sha256Base64url(code_verifier);
-        if (expectedCodeChallenge !== record.codeChallenge) return res.status(400).json ( { error: "invalid_request", error_description: "Invalid code_verifier" });
+        // PKCE validation
+        const computedChallenge = sha256Base64url(code_verifier);
+        if (computedChallenge !== record.codeChallenge) {
+        return res.status(400).json({ error: "invalid_grant", error_description: "PKCE validation failed" });
+        }
 
-        // All good, generate tokens
-        const user = record.user;
-        const scope = record.scope;
+        // One-time use code
+        authorization.delete(code);
+
+        // Create JWT access token
+        const privateKey = await importPKCS8(PRIVATE_KEY_PEM, "RS256");
+
+        const accessToken = await new SignJWT({
+            scope: record.scope,
+            name: record.user.name,
+            email: record.user.email
+        })
+        .setProtectorHeader({ alg: "RS256", kid: KEY_ID })
+        .setIssuer(ISSUER)
+        .setAudience(client_id)
+        .setSubject(record.user.sub)
+        .setExpirationTime("15m")
+        .sign(privateKey);
+
+        
+        // Create refresh token
+        const refreshToken = generateCode();
+        refreshToken.set(refresh_token, {
+            sub: record.user.sub,
+            scope: record.scope,
+            clientId: client_id
+        });
+        
+
+        return res.json({
+            accessToken: accessToken,
+            token_type: "Bearer",
+            expires_in: 15 * 60, // 15 minutes
+            refresh_token: refreshToken,
+            scope: record.scope
+        });
     }
+
+    if (grant_type === "refresh_token") {
+        const { refresh_token, client_id } = req.body;
+        const record = refreshTokens.get(refresh_token);
+        if (!record) return res.status(400).json({ error: "invalid_grant", error_description: "Invalid refresh token" });
+        if (record.clientId !== client_id) return res.status(400).json({ error: "invalid_grant", error_description: "Invalid client_id" });
+
+        // Create new access token
+        const privateKey = await importPKCS8(PRIVATE_KEY_PEM, "RS256");
+        const accessToken = await new SignJWT({scope: record.scope })
+            .setProtectorHeader({ alg: "RS256", kid: KEY_ID })
+            .setIssuer(ISSUER)
+            .setAudience(client_id)
+            .setSubject(record.sub)
+            .setExpirationTime("15m")
+            .sign(privateKey);
+
+        return res.json({
+            access_token: accessToken,
+            token_type: "Bearer",
+            expires_in: 15 * 60, // 15 minutes
+        });
+    }
+
+    res.status(400).json({ error: "unsupported_grant_type", error_description: "Only authorization_code grant is supported in this demo" });
+    
+});
+
+app.get("/.well-known/jwks.json", async (req, res) => {
+
+    const publicKey = await importSPKI(PUBLIC_KEY_PEM, "RS256");
+    const jwk = await exportJWK(publicKey);
+
+    jwk.use = "sig";
+    jwk.alg = "RS256";
+    jwk.kid = KEY_ID;
+
+    res.json({ 
+        keys: [jwk] 
+    });
 });
 
 app.listen(3000, () => {
