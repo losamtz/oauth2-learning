@@ -48,7 +48,12 @@ function requireScope(scope) {
 app.get("/api/profile", requireAuth, requireScope("api.read"), (req, res) => {
     res.json({ 
         message: "Protected profile information", 
-        user: req.user 
+        user: {
+            sub: req.user.sub,
+            name: req.user.name,
+            email: req.user.email,
+            scope: req.user.scope
+        } 
     });
 });
 
