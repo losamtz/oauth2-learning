@@ -40,6 +40,8 @@ app.get(("/"), (req, res) => {
     `);
 });
 
+
+
 app.get("/login", (req, res) => {
     const code_verifier = generateVerifier();
     const code_challenge = codeChallengeS256(code_verifier);
@@ -61,80 +63,83 @@ app.get("/login", (req, res) => {
     res.redirect(authorizeUrl.toString());
 });
 
+
+
 app.get("/callback", async (req, res) => {
-  const { code, state } = req.query;
+    const { code, state } = req.query;
 
-  if (!code) {
-    return res.status(400).send("Missing authorization code");
-  }
+    if (!code) {
+        return res.status(400).send("Missing authorization code");
+    }
 
-  if (state !== req.cookies.oauth_state) {
-    return res.status(400).send("Invalid state");
-  }
+    if (state !== req.cookies.oauth_state) {
+        return res.status(400).send("Invalid state");
+    }
 
-  const code_verifier = req.cookies.code_verifier;
+    const code_verifier = req.cookies.code_verifier;
 
-  const tokenRes = await axios.post(
-    `${AUTH_SERVER}/token`,
-    new URLSearchParams({
-      grant_type: "authorization_code",
-      code,
-      redirect_uri: REDIRECT_URI,
-      client_id: CLIENT_ID,
-      code_verifier
-    }).toString(),
-    { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
-  );
+    const tokenRes = await axios.post(
+        `${AUTH_SERVER}/token`,
+        new URLSearchParams({
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: REDIRECT_URI,
+        client_id: CLIENT_ID,
+        code_verifier
+        }).toString(),
+        { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+    );
 
-  const { access_token, refresh_token } = tokenRes.data;
+    const { access_token, refresh_token } = tokenRes.data;
 
-  res.cookie("access_token", access_token, { httpOnly: true });
-  res.cookie("refresh_token", refresh_token, { httpOnly: true });
+    res.cookie("access_token", access_token, { httpOnly: true });
+    res.cookie("refresh_token", refresh_token, { httpOnly: true });
 
-  // Clean up OAuth-only cookies
-  res.clearCookie("code_verifier");
-  res.clearCookie("oauth_state");
+    // Clean up OAuth-only cookies
+    res.clearCookie("code_verifier");
+    res.clearCookie("oauth_state");
 
-  // Redirect to normal app route
-  res.redirect("/profile");
+    // Redirect to normal app route
+    res.redirect("/profile");
 });
 
+
 app.get("/profile", async (req, res) => {
-  const accessToken = req.cookies.access_token;
-  if (!accessToken) return res.redirect("/");
+    const accessToken = req.cookies.access_token;
+    if (!accessToken) return res.redirect("/");
 
-  try {
-    const apiRes = await axios.get(`${RESOURCE_SERVER}/api/profile`, {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    });
+    try {
+        const apiRes = await axios.get(`${RESOURCE_SERVER}/api/profile`, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+        });
 
-    res.send(`<pre>${JSON.stringify(apiRes.data, null, 2)}</pre>`);
-  } catch (err) {
-    const msg = err?.response?.data ? JSON.stringify(err.response.data) : err.message;
-    res.status(500).send(`API call failed: ${msg}`);
-  }
+        res.send(`<pre>${JSON.stringify(apiRes.data, null, 2)}</pre>`);
+    } catch (err) {
+        const msg = err?.response?.data ? JSON.stringify(err.response.data) : err.message;
+        res.status(500).send(`API call failed: ${msg}`);
+    }
 });
 
 app.get("/refresh", async (req, res) => {
-  const refreshToken = req.cookies.refresh_token;
-  if (!refreshToken) return res.redirect("/");
+    const refreshToken = req.cookies.refresh_token;
+    if (!refreshToken) return res.redirect("/");
 
-  const tokenRes = await axios.post(
-    `${AUTH_SERVER}/token`,
-    new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: refreshToken,
-      client_id: CLIENT_ID
-    }).toString(),
-    { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
-  );
+    const tokenRes = await axios.post(
+        `${AUTH_SERVER}/token`,
+        new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+        client_id: CLIENT_ID
+        }).toString(),
+        { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+    );
 
-  res.cookie("access_token", tokenRes.data.access_token, { httpOnly: true });
+    res.cookie("access_token", tokenRes.data.access_token, { httpOnly: true });
 
-  res.send(`
-    <h3>Refreshed Access Token!</h3>
-    <a href="/profile">Call Protected API Again</a>
-  `);
+    res.send(`
+        <h3>Refreshed Access Token!</h3>
+        <a href="/profile">Call Protected API Again</a>
+    `);
 });
 
 app.listen(4000, () => {
