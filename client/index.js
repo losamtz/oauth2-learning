@@ -45,7 +45,96 @@ app.get("/login", (req, res) => {
     const code_challenge = codeChallengeS256(code_verifier);
     const state = generateState();
 
+    // Store verifier & state (demo only). In production: server-side session store.
+    res.cookie("code_verifier", code_verifier, { httpOnly: true });
+    res.cookie("oauth_state", state, { httpOnly: true });
 
+    const authorizeUrl = new URL(`${AUTH_SERVER}/authorize`);
+    authorizeUrl.searchParams.set("response_type", "code");
+    authorizeUrl.searchParams.set("client_id", CLIENT_ID);
+    authorizeUrl.searchParams.set("redirect_uri", REDIRECT_URI);
+    authorizeUrl.searchParams.set("scope", "api.read openid profile email");
+    authorizeUrl.searchParams.set("state", state);
+    authorizeUrl.searchParams.set("code_challenge", code_challenge);
+    authorizeUrl.searchParams.set("code_challenge_method", "S256");
+
+    res.redirect(authorizeUrl.toString());
+});
+
+app.get("/callback", async (req, res) => {
+  const { code, state } = req.query;
+
+  if (!code) {
+    return res.status(400).send("Missing authorization code");
+  }
+
+  if (state !== req.cookies.oauth_state) {
+    return res.status(400).send("Invalid state");
+  }
+
+  const code_verifier = req.cookies.code_verifier;
+
+  const tokenRes = await axios.post(
+    `${AUTH_SERVER}/token`,
+    new URLSearchParams({
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: REDIRECT_URI,
+      client_id: CLIENT_ID,
+      code_verifier
+    }).toString(),
+    { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+  );
+
+  const { access_token, refresh_token } = tokenRes.data;
+
+  res.cookie("access_token", access_token, { httpOnly: true });
+  res.cookie("refresh_token", refresh_token, { httpOnly: true });
+
+  // Clean up OAuth-only cookies
+  res.clearCookie("code_verifier");
+  res.clearCookie("oauth_state");
+
+  // Redirect to normal app route
+  res.redirect("/profile");
+});
+
+app.get("/profile", async (req, res) => {
+  const accessToken = req.cookies.access_token;
+  if (!accessToken) return res.redirect("/");
+
+  try {
+    const apiRes = await axios.get(`${RESOURCE_SERVER}/api/profile`, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+
+    res.send(`<pre>${JSON.stringify(apiRes.data, null, 2)}</pre>`);
+  } catch (err) {
+    const msg = err?.response?.data ? JSON.stringify(err.response.data) : err.message;
+    res.status(500).send(`API call failed: ${msg}`);
+  }
+});
+
+app.get("/refresh", async (req, res) => {
+  const refreshToken = req.cookies.refresh_token;
+  if (!refreshToken) return res.redirect("/");
+
+  const tokenRes = await axios.post(
+    `${AUTH_SERVER}/token`,
+    new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: refreshToken,
+      client_id: CLIENT_ID
+    }).toString(),
+    { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+  );
+
+  res.cookie("access_token", tokenRes.data.access_token, { httpOnly: true });
+
+  res.send(`
+    <h3>Refreshed Access Token!</h3>
+    <a href="/profile">Call Protected API Again</a>
+  `);
 });
 
 app.listen(4000, () => {
