@@ -1,6 +1,6 @@
 import express from "express";
 import cookieParser from "cookie-parser";
-import axis from "axios";
+import axios from "axios";
 import { randomBytes, createhash } from "crypto";
 
 const app = express();
