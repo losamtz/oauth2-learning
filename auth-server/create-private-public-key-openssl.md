@@ -1,4 +1,4 @@
-# Create Keys with openssl
+# Create Keys with openssl for auth-server
 
 Create private key to be able to generate a signed accesstoken and refresh token.
 Create a public key to be able to deliver to the resource server which will fetch it/ ask for it with path `/.well-known/jwks.json`
