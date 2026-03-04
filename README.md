@@ -111,6 +111,8 @@ cd ../client && npm install
 cd ../resource-server && npm install
 ```
 
+For `auth-server` key setup, see [create-private-public-key-openssl.md](auth-server/create-private-public-key-openssl.md).
+
 ### 2) Run all apps (development mode)
 
 Use three terminals:
