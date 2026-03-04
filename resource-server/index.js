@@ -7,7 +7,7 @@ app.use(express.json());
 
 const ISSUER = "http://localhost:3000";
 const AUDIENCE = "demo-client";
-const JWKS_URL = new URL( `${ISSUER}.well-known/jwks.json`);
+const JWKS_URL = new URL( `${ISSUER}/.well-known/jwks.json`);
 
 const JWKS = createRemoteJWKSet(JWKS_URL);
 

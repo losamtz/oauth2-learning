@@ -35,3 +35,10 @@ This exact pattern is commonly used for:
 - Creating a JWK
 - mTLS setups
 - API signature systems
+
+## Public Key generation
+
+```bash
+openssl rsa -in private.pem -pubout -out public.pem
+
+```

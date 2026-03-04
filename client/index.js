@@ -1,7 +1,7 @@
 import express from "express";
 import cookieParser from "cookie-parser";
 import axios from "axios";
-import { randomBytes, createhash } from "crypto";
+import { randomBytes, createHash } from "crypto";
 
 const app = express();
 app.use(cookieParser());
@@ -25,7 +25,7 @@ function generateVerifier() {
 }
 
 function codeChallengeS256(verifier) {
-    const hash = createhash("sha256").update(verifier).digest();
+    const hash = createHash("sha256").update(verifier).digest();
     return base64url(hash);
 }
 function generateState() {
@@ -78,29 +78,34 @@ app.get("/callback", async (req, res) => {
 
     const code_verifier = req.cookies.code_verifier;
 
-    const tokenRes = await axios.post(
-        `${AUTH_SERVER}/token`,
-        new URLSearchParams({
-        grant_type: "authorization_code",
-        code,
-        redirect_uri: REDIRECT_URI,
-        client_id: CLIENT_ID,
-        code_verifier
-        }).toString(),
-        { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
-    );
+    try {
+        const tokenRes = await axios.post(
+            `${AUTH_SERVER}/token`,
+            new URLSearchParams({
+            grant_type: "authorization_code",
+            code,
+            redirect_uri: REDIRECT_URI,
+            client_id: CLIENT_ID,
+            code_verifier
+            }).toString(),
+            { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+        );
 
-    const { access_token, refresh_token } = tokenRes.data;
+        const { access_token, refresh_token } = tokenRes.data;
 
-    res.cookie("access_token", access_token, { httpOnly: true });
-    res.cookie("refresh_token", refresh_token, { httpOnly: true });
+        res.cookie("access_token", access_token, { httpOnly: true });
+        res.cookie("refresh_token", refresh_token, { httpOnly: true });
 
-    // Clean up OAuth-only cookies
-    res.clearCookie("code_verifier");
-    res.clearCookie("oauth_state");
+        // Clean up OAuth-only cookies
+        res.clearCookie("code_verifier");
+        res.clearCookie("oauth_state");
 
-    // Redirect to normal app route
-    res.redirect("/profile");
+        // Redirect to normal app route
+        res.redirect("/profile");
+    } catch (err) {
+        const details = err?.response?.data ? JSON.stringify(err.response.data) : err.message;
+        return res.status(400).send(`Token exchange failed: ${details}`);
+    }
 });
 
 
@@ -110,7 +115,7 @@ app.get("/profile", async (req, res) => {
 
     try {
         const apiRes = await axios.get(`${RESOURCE_SERVER}/api/profile`, {
-        headers: { Authorization: `Bearer ${accessToken}` }
+            headers: { Authorization: `Bearer ${accessToken}` }
         });
 
         res.send(`<pre>${JSON.stringify(apiRes.data, null, 2)}</pre>`);
@@ -127,9 +132,9 @@ app.get("/refresh", async (req, res) => {
     const tokenRes = await axios.post(
         `${AUTH_SERVER}/token`,
         new URLSearchParams({
-        grant_type: "refresh_token",
-        refresh_token: refreshToken,
-        client_id: CLIENT_ID
+            grant_type: "refresh_token",
+            refresh_token: refreshToken,
+            client_id: CLIENT_ID
         }).toString(),
         { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
     );

@@ -12,7 +12,7 @@ app.use(bodyParser.json());
 app.use(cookieParser());
 
 const clients = new Map();
-const authorazationCode = new Map();
+const authorizationCode = new Map();
 const refreshTokens = new Map();
 
 clients.set("demo-client", {
@@ -28,7 +28,7 @@ const ISSUER = "http://localhost:3000";
 const KEY_ID = "demo-key-1";
 
 function base64url(input) {
-  return input.toString("base64").replace(/\+/g, "-").replace(/\//g, "=").replace(/=+$/, "");
+  return input.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 function sha256Base64url(str) {
@@ -80,7 +80,7 @@ app.get("/authorize", (req, res) => {
 
     // Generate authorization code
     const code = generateCode();
-    authorazationCode.set(code, {
+    authorizationCode.set(code, {
         clientId: client_id,
         redirectUri: redirect_uri,
         codeChallenge: code_challenge,
@@ -112,10 +112,10 @@ app.post("/token", async (req, res) => {
         const { code, redirect_uri, client_id, code_verifier } = req.body;
 
         // code, redirect_uri, client_id, code_verifier are required
-        const record = authorazationCode.get(code);
+        const record = authorizationCode.get(code);
         if (!record ) return res.status(400).json ( { error: "invalid_request", error_description: "Missing code" });
         if (record.expiredAt < Date.now()) {
-            authorazationCode.delete(code);
+            authorizationCode.delete(code);
             return res.status(400).json ( { error: "invalid_request", error_description: "Code expired" });
         }
         if (record.clientId !== client_id || record.redirectUri !== redirect_uri) return res.status(400).json ( { error: "invalid_request", error_description: "Invalid client_id or redirect_uri" });
@@ -127,7 +127,7 @@ app.post("/token", async (req, res) => {
         }
 
         // One-time use code
-        authorization.delete(code);
+        authorizationCode.delete(code);
 
         // Create JWT access token
         const privateKey = await importPKCS8(PRIVATE_KEY_PEM, "RS256");
@@ -137,7 +137,7 @@ app.post("/token", async (req, res) => {
             name: record.user.name,
             email: record.user.email
         })
-        .setProtectorHeader({ alg: "RS256", kid: KEY_ID })
+        .setProtectedHeader({ alg: "RS256", kid: KEY_ID })
         .setIssuer(ISSUER)
         .setAudience(client_id)
         .setSubject(record.user.sub)
@@ -146,8 +146,8 @@ app.post("/token", async (req, res) => {
 
         
         // Create refresh token
-        const refreshToken = generateCode();
-        refreshToken.set(refresh_token, {
+        const refresh_token = generateCode();
+        refreshTokens.set(refresh_token, {
             sub: record.user.sub,
             scope: record.scope,
             clientId: client_id
@@ -155,10 +155,10 @@ app.post("/token", async (req, res) => {
         
 
         return res.json({
-            accessToken: accessToken,
+            access_token: accessToken,
             token_type: "Bearer",
             expires_in: 15 * 60, // 15 minutes
-            refresh_token: refreshToken,
+            refresh_token,
             scope: record.scope
         });
     }
@@ -171,8 +171,12 @@ app.post("/token", async (req, res) => {
 
         // Create new access token
         const privateKey = await importPKCS8(PRIVATE_KEY_PEM, "RS256");
-        const accessToken = await new SignJWT({scope: record.scope })
-            .setProtectorHeader({ alg: "RS256", kid: KEY_ID })
+        const accessToken = await new SignJWT({
+            scope: record.scope,
+            name: record.name,
+            email: record.email
+        })
+            .setProtectedHeader({ alg: "RS256", kid: KEY_ID })
             .setIssuer(ISSUER)
             .setAudience(client_id)
             .setSubject(record.sub)
