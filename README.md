@@ -157,5 +157,6 @@ cd client && npm start
 
 - This is a learning/demo setup, not production hardening.
 - State, authorization codes, and refresh tokens are stored in memory (lost on restart).
-- Keys are local files and not managed by KMS/HSM in this demo.
+- The signing keys are saved as local files (`private.pem`/`public.pem`) inside this project.
+- In production, many teams keep private keys in a managed key service or hardware module (KMS/HSM) instead of plain files for stronger security.
 - Resource server checks that `api.read` is present; extra scopes are allowed.
