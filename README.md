@@ -1,6 +1,6 @@
 # OAuth2 Learning: Client, Authentication & Resource Servers Model
 
-This project demonstrates OAuth 2.0 Authorization Code Flow with PKCE using three Node.js apps:
+This project demonstrates OAuth 2.0 Authorization Code Flow with PKCE (Proof Key for Code Exchange) using three Node.js apps:
 
 - `auth-server` (Authorization Server) on `http://localhost:3100`
 - `client` (OAuth Client / Relying Party) on `http://localhost:5100`
