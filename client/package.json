@@ -1,7 +1,16 @@
 {
   "name": "client",
   "version": "1.0.0",
-  "description": "",
+  "description": "Minimalistic demo auth server to mimic auth-resource-client model ",
+  "homepage": "https://github.com/losamtz/oauth2-learning#readme",
+  "bugs": {
+    "url": "https://github.com/losamtz/oauth2-learning/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/losamtz/oauth2-learning.git"
+  },
+  "license": "MIT",
   "main": "index.js",
   "scripts": {
     "dev": "node --watch index.js",
@@ -9,8 +18,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Andrés Martinez-Losa",
   "type": "module",
   "dependencies": {
     "axios": "^1.13.6",
