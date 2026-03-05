@@ -9,7 +9,7 @@ app.use(cookieParser());
 const AUTH_SERVER = "http://localhost:3000";
 const RESOURCE_SERVER = "http://localhost:5000";
 
-const CLIENT_ID = "demo-client";
+const CLIENT_ID = "demo-mimic-acx-client";
 const REDIRECT_URI = "http://localhost:4000/callback";
 
 // helpers

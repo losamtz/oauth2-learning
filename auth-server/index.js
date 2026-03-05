@@ -1,5 +1,4 @@
 import express from "express";
-import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import { randomBytes, createHash } from "crypto";
 import { SignJWT, exportJWK, importPKCS8, importSPKI } from "jose";
@@ -7,16 +6,16 @@ import fs from "fs";
 
 
 const app = express();
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 app.use(cookieParser());
 
 const clients = new Map();
 const authorizationCode = new Map();
 const refreshTokens = new Map();
 
-clients.set("demo-client", {
-    clientId: "demo-client",
+clients.set("mimic-acx-client", {
+    clientId: "mimic-acx-client",
     redirectUris: ["http://localhost:4000/callback"]
 });
 
@@ -25,7 +24,7 @@ const PUBLIC_KEY_PEM = fs.readFileSync("./public.pem", "utf8");
 
 
 const ISSUER = "http://localhost:3000";
-const KEY_ID = "demo-key-1";
+const KEY_ID = "auth-server-key-1234";
 
 function base64url(input) {
   return input.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -42,9 +41,9 @@ function generateCode() {
 
 function getDemoUser() {
   return {
-    sub: "alice",
-    name: "Alice chain",
-    email: "alice@example.com"
+    sub: "Arthur",
+    name: "King Arthur",
+    email: "arthur@example.com"
   };
 }
 
