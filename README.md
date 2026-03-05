@@ -23,6 +23,104 @@ oauth2-learning/
 
 ## OAuth2 Model (What each app does)
 
+## Detailed Drawing (Architecture + Flow)
+
+### Architecture Diagram
+
+```mermaid
+flowchart LR
+    U[User Browser]
+
+    subgraph C[Client App - localhost:4000]
+        C1[GET /]
+        C2[GET /login]
+        C3[GET /callback]
+        C4[GET /profile]
+        C5[GET /refresh]
+        CStore[(HTTP-only cookies)\ncode_verifier, oauth_state,\naccess_token, refresh_token]
+    end
+
+    subgraph A[Authorization Server - localhost:3000]
+        A1[GET /authorize]
+        A2[POST /token]
+        A3[GET /.well-known/jwks.json]
+        AStore1[(clients)]
+        AStore2[(authorizationCode)]
+        AStore3[(refreshTokens)]
+        AKey[(private.pem/public.pem)]
+    end
+
+    subgraph R[Resource Server - localhost:5000]
+        R1[GET /api/profile]
+        RJWKS[Remote JWKS cache]
+    end
+
+    U -->|open app + click login| C1
+    C1 --> C2
+    C2 --> CStore
+    C2 -->|302 redirect with PKCE + state| A1
+    A1 --> AStore1
+    A1 --> AStore2
+    A1 -->|302 back with code + state| C3
+    C3 --> CStore
+    C3 -->|POST /token\n(grant_type=authorization_code)| A2
+    A2 --> AStore2
+    A2 --> AStore3
+    A2 --> AKey
+    A2 -->|access_token + refresh_token| C3
+    C3 --> CStore
+    C4 -->|Bearer access_token| R1
+    R1 --> RJWKS
+    RJWKS -->|fetch keys| A3
+    C5 -->|POST /token\n(grant_type=refresh_token)| A2
+    A2 -->|new access_token| C5
+    C5 --> CStore
+```
+
+### Sequence Diagram (Authorization Code + PKCE + Refresh)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User Browser
+    participant C as Client (4000)
+    participant A as Auth Server (3000)
+    participant R as Resource Server (5000)
+
+    U->>C: GET /
+    U->>C: GET /login
+    C->>C: Generate code_verifier, code_challenge(S256), state
+    C->>U: Set cookies(code_verifier, oauth_state)
+    C->>A: Redirect to GET /authorize with PKCE + state
+    A->>A: Validate client_id, redirect_uri, response_type, PKCE
+    A->>A: Store authorization code (short TTL)
+    A->>C: Redirect /callback?code=...&state=...
+
+    U->>C: GET /callback?code&state
+    C->>C: Validate state from cookie
+    C->>A: POST /token (authorization_code + code_verifier)
+    A->>A: Validate code + PKCE + redirect_uri + client_id
+    A->>A: Delete one-time code
+    A->>A: Sign JWT access token (RS256, private.pem)
+    A->>A: Store refresh token
+    A-->>C: access_token + refresh_token
+    C->>U: Set cookies(access_token, refresh_token)
+
+    U->>C: GET /profile
+    C->>R: GET /api/profile (Authorization: Bearer access_token)
+    R->>A: GET /.well-known/jwks.json (if key not cached)
+    R->>R: Verify JWT signature + issuer + audience + api.read scope
+    R-->>C: Protected profile JSON
+    C-->>U: Render profile
+
+    U->>C: GET /refresh
+    C->>A: POST /token (refresh_token)
+    A->>A: Validate refresh_token + client_id
+    A->>A: Sign new access token
+    A-->>C: new access_token
+    C->>U: Update access_token cookie
+```
+
 ### 1) Authorization Server (`auth-server`)
 
 Responsibilities:
