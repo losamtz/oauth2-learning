@@ -148,6 +148,8 @@ app.post("/token", async (req, res) => {
         const refresh_token = generateCode();
         refreshTokens.set(refresh_token, {
             sub: record.user.sub,
+            name: record.user.name,
+            email: record.user.email,
             scope: record.scope,
             clientId: client_id
         });
