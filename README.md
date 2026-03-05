@@ -2,9 +2,9 @@
 
 This project demonstrates OAuth 2.0 Authorization Code Flow with PKCE using three Node.js apps:
 
-- `auth-server` (Authorization Server) on `http://localhost:3000`
-- `client` (OAuth Client / Relying Party) on `http://localhost:4000`
-- `resource-server` (Protected API) on `http://localhost:5000`
+- `auth-server` (Authorization Server) on `http://localhost:3100`
+- `client` (OAuth Client / Relying Party) on `http://localhost:5100`
+- `resource-server` (Protected API) on `http://localhost:4100`
 
 ## Project Structure
 
@@ -23,6 +23,13 @@ oauth2-learning/
 
 ## OAuth2 Model (What each app does)
 
+## Current Demo Configuration
+
+- `client_id`: `mimic-acx-client`
+- `issuer`: `http://localhost:3100`
+- `redirect_uri`: `http://localhost:5100/callback`
+- `resource audience`: `mimic-acx-client`
+
 ## Detailed Drawing (Architecture + Flow)
 
 ### Architecture Diagram
@@ -31,7 +38,7 @@ oauth2-learning/
 flowchart LR
     U[User Browser]
 
-    subgraph C[Client App - localhost:4000]
+    subgraph C[Client App - localhost:5100]
         C1[GET /]
         C2[GET /login]
         C3[GET /callback]
@@ -40,7 +47,7 @@ flowchart LR
         CStore[(HTTP only cookies<br/>code_verifier oauth_state<br/>access_token refresh_token)]
     end
 
-    subgraph A[Authorization Server - localhost:3000]
+    subgraph A[Authorization Server - localhost:3100]
         A1[GET /authorize]
         A2[POST /token]
         A3[GET /.well-known/jwks.json]
@@ -50,7 +57,7 @@ flowchart LR
         AKey[(private.pem/public.pem)]
     end
 
-    subgraph R[Resource Server - localhost:5000]
+    subgraph R[Resource Server - localhost:4100]
         R1[GET /api/profile]
         RJWKS[Remote JWKS cache]
     end
@@ -83,9 +90,9 @@ flowchart LR
 sequenceDiagram
     autonumber
     participant U as User Browser
-    participant C as Client (4000)
-    participant A as Auth Server (3000)
-    participant R as Resource Server (5000)
+    participant C as Client (5100)
+    participant A as Auth Server (3100)
+    participant R as Resource Server (4100)
 
     U->>C: GET /
     U->>C: GET /login
@@ -230,7 +237,7 @@ cd resource-server && npm run dev
 cd client && npm run dev
 ```
 
-Then open: `http://localhost:4000`
+Then open: `http://localhost:5100`
 
 ### 3) Run all apps (start mode)
 

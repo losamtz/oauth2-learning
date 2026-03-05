@@ -6,11 +6,11 @@ import { randomBytes, createHash } from "crypto";
 const app = express();
 app.use(cookieParser());
 
-const AUTH_SERVER = "http://localhost:3000";
-const RESOURCE_SERVER = "http://localhost:5000";
+const AUTH_SERVER = "http://localhost:3100";
+const RESOURCE_SERVER = "http://localhost:4100";
 
-const CLIENT_ID = "demo-mimic-acx-client";
-const REDIRECT_URI = "http://localhost:4000/callback";
+const CLIENT_ID = "mimic-acx-client";
+const REDIRECT_URI = "http://localhost:5100/callback";
 
 // helpers
 function base64url(input) {
@@ -147,6 +147,6 @@ app.get("/refresh", async (req, res) => {
     `);
 });
 
-app.listen(4000, () => {
-    console.log("Client running on http://localhost:4000");
+app.listen(5100, () => {
+    console.log("Client running on http://localhost:5100");
 });

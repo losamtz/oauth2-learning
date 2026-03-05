@@ -16,14 +16,14 @@ const refreshTokens = new Map();
 
 clients.set("mimic-acx-client", {
     clientId: "mimic-acx-client",
-    redirectUris: ["http://localhost:4000/callback"]
+    redirectUris: ["http://localhost:5100/callback"]
 });
 
 const PRIVATE_KEY_PEM = fs.readFileSync("./private.pem", "utf8");
 const PUBLIC_KEY_PEM = fs.readFileSync("./public.pem", "utf8");
 
 
-const ISSUER = "http://localhost:3000";
+const ISSUER = "http://localhost:3100";
 const KEY_ID = "auth-server-key-1234";
 
 function base64url(input) {
@@ -207,6 +207,6 @@ app.get("/.well-known/jwks.json", async (req, res) => {
     });
 });
 
-app.listen(3000, () => {
-  console.log("Authorization server running on http://localhost:3000");
+app.listen(3100, () => {
+  console.log("Authorization server running on http://localhost:3100");
 });

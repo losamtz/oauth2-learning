@@ -5,7 +5,7 @@ const app = express();
 app.use(express.json());
 
 
-const ISSUER = "http://localhost:3000";
+const ISSUER = "http://localhost:3100";
 const AUDIENCE = "mimic-acx-client";
 const JWKS_URL = new URL( `${ISSUER}/.well-known/jwks.json`);
 
@@ -57,6 +57,6 @@ app.get("/api/profile", requireAuth, requireScope("api.read"), (req, res) => {
     });
 });
 
-app.listen(5000, () => {
-    console.log("Resource server running on http://localhost:5000");
+app.listen(4100, () => {
+    console.log("Resource server running on http://localhost:4100");
 });
