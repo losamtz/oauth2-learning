@@ -218,7 +218,17 @@ cd ../resource-server && npm install
 
 For `auth-server` key setup, see [create private / public key with openssl](auth-server/create-private-public-key-openssl.md).
 
-### 2) Run all apps (development mode)
+### 2) Run all apps with one command (recommended)
+
+From project root:
+
+```bash
+npm run dev
+```
+
+Then open: `http://localhost:5100`
+
+### 3) Run all apps (development mode, 3 terminals)
 
 Use three terminals:
 
@@ -237,9 +247,7 @@ cd resource-server && npm run dev
 cd client && npm run dev
 ```
 
-Then open: `http://localhost:5100`
-
-### 3) Run all apps (start mode)
+### 4) Run all apps (start mode)
 
 Use three terminals:
 
@@ -256,6 +264,12 @@ cd resource-server && npm start
 ```bash
 # terminal 3
 cd client && npm start
+```
+
+Or run all three with one command from project root:
+
+```bash
+npm start
 ```
 
 ## Notes

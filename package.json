@@ -1,0 +1,8 @@
+{
+  "name": "oauth2-learning",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix auth-server & npm run dev --prefix resource-server & npm run dev --prefix client & wait",
+    "start": "npm run start --prefix auth-server & npm run start --prefix resource-server & npm run start --prefix client & wait"
+  }
+}
