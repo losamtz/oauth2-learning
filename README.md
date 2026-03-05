@@ -37,7 +37,7 @@ flowchart LR
         C3[GET /callback]
         C4[GET /profile]
         C5[GET /refresh]
-        CStore[(HTTP-only cookies)\ncode_verifier, oauth_state,\naccess_token, refresh_token]
+        CStore[(HTTP only cookies<br/>code_verifier oauth_state<br/>access_token refresh_token)]
     end
 
     subgraph A[Authorization Server - localhost:3000]
@@ -63,7 +63,7 @@ flowchart LR
     A1 --> AStore2
     A1 -->|302 back with code + state| C3
     C3 --> CStore
-    C3 -->|POST /token\n(grant_type=authorization_code)| A2
+    C3 -->|POST /token authorization_code| A2
     A2 --> AStore2
     A2 --> AStore3
     A2 --> AKey
@@ -72,7 +72,7 @@ flowchart LR
     C4 -->|Bearer access_token| R1
     R1 --> RJWKS
     RJWKS -->|fetch keys| A3
-    C5 -->|POST /token\n(grant_type=refresh_token)| A2
+    C5 -->|POST /token refresh_token| A2
     A2 -->|new access_token| C5
     C5 --> CStore
 ```
