@@ -1,4 +1,4 @@
-# OAuth2 Learning: Client and aunthentication & resource servers model
+# OAuth2 Learning: Client, Authentication & Resource Servers Model
 
 This project demonstrates OAuth 2.0 Authorization Code Flow with PKCE using three Node.js apps:
 
